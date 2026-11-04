@@ -421,3 +421,9 @@ verify_jwt = false
 
 [functions.suggest-opinions]
 verify_jwt = false
+
+[functions.soniox-token]
+verify_jwt = false
+
+[functions.translate]
+verify_jwt = false

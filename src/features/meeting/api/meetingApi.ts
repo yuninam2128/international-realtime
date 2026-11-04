@@ -24,11 +24,17 @@ export async function fetchRoom(meetingId: string) {
   };
 }
 
-export async function appendSegment(meetingId: string, speaker: string, content: string) {
+export async function appendSegment(
+  meetingId: string,
+  speaker: string,
+  content: string,
+  language: string | null
+) {
   const { data, error } = await supabase.rpc('append_segment', {
     p_meeting: meetingId,
     p_speaker: speaker,
     p_content: content,
+    p_language: language,
   });
   if (error) throw error;
   return data as Segment;
@@ -50,10 +56,32 @@ export async function suggestOpinions(params: {
   source: 'auto' | 'manual';
   name: string;
   role: string;
+  language: string;
 }) {
   const { data, error } = await supabase.functions.invoke<OpinionSuggestion>('suggest-opinions', {
     body: params,
   });
+  if (error || !data) throw error ?? new Error('빈 응답');
+  return data;
+}
+
+/** 브라우저가 Soniox 웹소켓을 여는 데 쓰는 1분짜리 임시 키 */
+export async function fetchSonioxKey() {
+  const { data, error } = await supabase.functions.invoke<{ apiKey: string }>('soniox-token');
+  if (error || !data) throw error ?? new Error('빈 응답');
+  return data.apiKey;
+}
+
+/** 발화는 서버에 저장된 번역을 같이 쓰고, texts(회의 요약 등)는 그때그때 번역한다. */
+export async function translate(params: {
+  language: string;
+  segmentIds?: number[];
+  texts?: string[];
+}) {
+  const { data, error } = await supabase.functions.invoke<{
+    segments: Record<number, string>;
+    texts: string[];
+  }>('translate', { body: params });
   if (error || !data) throw error ?? new Error('빈 응답');
   return data;
 }

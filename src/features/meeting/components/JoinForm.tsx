@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import Input from '../../../shared/components/Input';
+import LanguageSelect from '../../../shared/components/LanguageSelect';
 import type { Profile } from '../types';
 
 type JoinFormProps = {
@@ -18,6 +19,7 @@ export default function JoinForm({ initial, onJoin }: JoinFormProps) {
       meetingId: form.meetingId.trim(),
       name: form.name.trim(),
       role: form.role.trim(),
+      language: form.language,
     });
   };
 
@@ -28,9 +30,10 @@ export default function JoinForm({ initial, onJoin }: JoinFormProps) {
         className="flex w-full max-w-[420px] flex-col gap-6 rounded-4 bg-white p-8 shadow-02"
       >
         <div className="flex flex-col gap-2">
-          <h1 className="heading-05 text-gray-900">실시간 의견 추천 랩</h1>
+          <h1 className="heading-05 text-gray-900">Nuncheet</h1>
           <p className="body-03 text-gray-500">
-            같은 방 코드로 탭을 두 개 이상 열면 맥락과 추천이 실시간으로 공유되는지 볼 수 있어요.
+            같은 방 코드로 들어오면 전사·맥락이 실시간으로 공유되고, 각자 고른 언어로 번역해
+            보여줘요.
           </p>
         </div>
         <div className="flex flex-col gap-4">
@@ -55,6 +58,14 @@ export default function JoinForm({ initial, onJoin }: JoinFormProps) {
             value={form.role}
             onChange={e => setForm({ ...form, role: e.target.value })}
           />
+          <label htmlFor="language" className="flex flex-col gap-[6px]">
+            <span className="body-02 text-gray-900">내 언어</span>
+            <LanguageSelect
+              id="language"
+              value={form.language}
+              onChange={language => setForm({ ...form, language })}
+            />
+          </label>
         </div>
         <button
           type="submit"

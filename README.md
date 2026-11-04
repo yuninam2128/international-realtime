@@ -7,7 +7,8 @@
 **프론트 + Supabase** 만으로 동작합니다.
 
 ```
-브라우저 STT(Web Speech) ─ final ─▶ rpc append_segment ─▶ transcript_segments
+녹음 기기 마이크 ─ webm ─▶ Soniox(화자 분리) ─ <end>·화자 전환 ─▶ rpc append_segment ─▶ transcript_segments
+        (임시 키는 Edge Function soniox-token 이 발급)
         (2개 또는 10초 배치) ─▶ Edge Function live-context
             claim_live_context(lease) → OpenAI/Gemini(요약·주제·키워드·suggestDecision) → live_context 갱신
         Realtime(live_context UPDATE) ─▶ 모든 참여자 화면
@@ -22,8 +23,8 @@
    npx supabase login
    npx supabase link --project-ref <project-ref>
    npx supabase db push
-   npx supabase secrets set OPENAI_API_KEY=sk-...
-   npx supabase functions deploy live-context suggest-opinions
+   npx supabase secrets set OPENAI_API_KEY=sk-... SONIOX_API_KEY=snx_...
+   npx supabase functions deploy live-context suggest-opinions soniox-token translate --use-api
    ```
    모델은 `OPENAI_LIVE_CONTEXT_MODEL`(기본 `gpt-5.6-luna`), `OPENAI_OPINION_MODEL`(기본 `gpt-5.6-terra`),
    reasoning effort 는 `OPENAI_LIVE_CONTEXT_EFFORT` / `OPENAI_OPINION_EFFORT`(기본 `low`) 시크릿으로 바꿀 수 있습니다.
@@ -32,16 +33,17 @@
    ```bash
    npx supabase secrets set AI_PROVIDER=gemini GEMINI_API_KEY=AIza...
    ```
-   모델은 `GEMINI_LIVE_CONTEXT_MODEL` / `GEMINI_OPINION_MODEL`(기본 `gemini-3.5-flash-lite` / `gemini-3.5-flash`),
-   생각 설정은 `GEMINI_LIVE_CONTEXT_THINKING` / `GEMINI_OPINION_THINKING` 입니다.
-   기본 `low` 는 thinkingLevel 로, 숫자를 넣으면 thinkingBudget 으로 보냅니다.
+   모델은 `GEMINI_LIVE_CONTEXT_MODEL` / `GEMINI_OPINION_MODEL`, `GEMINI_TRANSLATE_MODEL`(기본 모두 `gemini-3.1-flash-lite`),
+   생각 설정은 `GEMINI_<작업>_THINKING` 입니다. 과부하면 `GEMINI_FALLBACK_MODEL`(기본 `gemini-3.5-flash-lite`)로 넘어갑니다.
+   기본 `minimal` 은 thinkingLevel 로, 숫자를 넣으면 thinkingBudget 으로 보냅니다.
 3. 프론트를 켭니다.
    ```bash
    cp .env.example .env.local   # URL 과 publishable(anon) key 입력
    npm install
    npm run dev                  # http://localhost:5174
    ```
-4. **Chrome** 에서 같은 방 코드로 탭을 두 개 열고(이름·역할은 다르게), 한쪽에서 녹음하거나 발화를 입력합니다.
+4. 같은 방 코드로 참여자마다 접속합니다(이름·역할은 다르게). 대면 회의이므로 **녹음은 한 기기에서만** 켭니다.
+   여러 기기가 녹음하면 같은 말이 기기 수만큼 전사됩니다. 나머지 참여자는 화면만 보고 추천을 받습니다.
 
 ## 볼 것
 
@@ -52,6 +54,7 @@
 
 ## 실험용이라 단순화한 것
 
-- STT 는 Soniox 대신 브라우저 Web Speech API(Chrome)이고 화자 분리가 없습니다. 화자는 입력한 사람 이름입니다.
+- 화자는 Soniox 화자 분리 번호("화자 1", "화자 2")로만 표시합니다. 번호를 참여자 이름과 연결하지 않습니다.
+- 한 방에서 녹음 기기가 하나인지 강제하지 않습니다.
 - 방 코드만 알면 누구나 읽을 수 있는 RLS 입니다. 추천은 본인 것만 보입니다.
 - RAG(참고자료 검색)는 뺐습니다.

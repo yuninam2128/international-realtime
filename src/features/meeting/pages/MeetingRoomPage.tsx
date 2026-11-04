@@ -1,23 +1,36 @@
 import { useMemo } from 'react';
 import { MicIcon, StopIcon } from '../../../shared/components/icons';
+import LanguageSelect from '../../../shared/components/LanguageSelect';
 import LatencyPanel from '../components/LatencyPanel';
 import LiveContextCard from '../components/LiveContextCard';
 import OpinionPanel from '../components/OpinionPanel';
 import TranscriptPanel from '../components/TranscriptPanel';
 import useMeetingRoom from '../hooks/useMeetingRoom';
-import useSpeechRecognition from '../hooks/useSpeechRecognition';
+import useSonioxTranscription from '../hooks/useSonioxTranscription';
+import useTranslations from '../hooks/useTranslations';
 import type { Profile } from '../types';
 
 type MeetingRoomPageProps = {
   profile: Profile;
   onLeave: () => void;
+  onChangeLanguage: (language: string) => void;
 };
 
-export default function MeetingRoomPage({ profile, onLeave }: MeetingRoomPageProps) {
+export default function MeetingRoomPage({
+  profile,
+  onLeave,
+  onChangeLanguage,
+}: MeetingRoomPageProps) {
   const room = useMeetingRoom(profile);
-  const speech = useSpeechRecognition({
-    onFinal: (text, finalizedAt) => void room.addUtterance(text, finalizedAt),
+  const speech = useSonioxTranscription({
+    onFinal: (text, finalizedAt, speaker, language) =>
+      void room.addUtterance(text, finalizedAt, speaker, language),
   });
+  const { segmentTranslations, contextTranslation } = useTranslations(
+    profile.language,
+    room.segments,
+    room.context
+  );
 
   const segmentsById = useMemo(
     () => new Map(room.segments.map(segment => [segment.id, segment])),
@@ -48,6 +61,12 @@ export default function MeetingRoomPage({ profile, onLeave }: MeetingRoomPagePro
           </span>
 
           <div className="ml-auto flex items-center gap-2.5">
+            <LanguageSelect
+              aria-label="내 언어"
+              value={profile.language}
+              onChange={onChangeLanguage}
+              className="h-10"
+            />
             <button
               type="button"
               onClick={onLeave}
@@ -68,9 +87,13 @@ export default function MeetingRoomPage({ profile, onLeave }: MeetingRoomPagePro
             ) : (
               <button
                 type="button"
-                onClick={speech.start}
+                onClick={() => void speech.start()}
                 disabled={!speech.supported}
-                title={speech.supported ? undefined : 'Chrome 에서 열어 주세요'}
+                title={
+                  speech.supported
+                    ? '이 기기로 회의실 전체 소리를 녹음합니다. 한 방에서는 한 기기만 켜 주세요.'
+                    : '이 브라우저는 녹음을 지원하지 않습니다'
+                }
                 className="flex h-10 items-center gap-1.5 rounded-2 bg-primary-500 px-4 title-03 text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <MicIcon className="size-icon-xs" />
@@ -104,6 +127,7 @@ export default function MeetingRoomPage({ profile, onLeave }: MeetingRoomPagePro
         <div className="min-h-[420px] lg:col-span-7 lg:min-h-0">
           <TranscriptPanel
             segments={room.segments}
+            translations={segmentTranslations}
             interim={speech.interim}
             targetSegmentIds={targetSegmentIds}
             generatingSegmentIds={room.generatingSegmentIds}
@@ -117,7 +141,11 @@ export default function MeetingRoomPage({ profile, onLeave }: MeetingRoomPagePro
             segmentsById={segmentsById}
             generating={room.generatingSegmentIds.length > 0}
           />
-          <LiveContextCard context={room.context} onRefresh={room.refreshNow} />
+          <LiveContextCard
+            context={room.context}
+            translation={contextTranslation}
+            onRefresh={room.refreshNow}
+          />
           <LatencyPanel latencies={room.latencies} />
         </aside>
       </main>

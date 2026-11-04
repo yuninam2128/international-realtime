@@ -2,6 +2,8 @@ export type Profile = {
   meetingId: string;
   name: string;
   role: string;
+  // 전사 번역·추천 뜻을 보여줄 언어 (ISO 코드)
+  language: string;
 };
 
 export type Segment = {
@@ -10,6 +12,8 @@ export type Segment = {
   sequence_index: number;
   speaker: string;
   content: string;
+  // Soniox 언어 식별 결과. 직접 입력한 발화는 null
+  language: string | null;
   created_at: string;
 };
 
@@ -42,6 +46,9 @@ export type OpinionSuggestion = {
   agree: string;
   disagree: string;
   alternative: string;
+  language: string | null;
+  // 사용자 언어로 옮긴 세 문장의 뜻. 한국어 사용자는 null
+  gloss: { agree: string; disagree: string; alternative: string } | null;
   ai_ms: number | null;
   created_at: string;
 };

@@ -16,7 +16,7 @@ const MAX_LATENCY_ENTRIES = 50;
 const toErrorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export default function useMeetingRoom(profile: Profile) {
-  const { meetingId, name, role } = profile;
+  const { meetingId, name, role, language } = profile;
   const [segments, setSegments] = useState<Segment[]>([]);
   const [context, setContext] = useState<LiveContext | null>(null);
   const [suggestions, setSuggestions] = useState<OpinionSuggestion[]>([]);
@@ -52,7 +52,14 @@ export default function useMeetingRoom(profile: Profile) {
       setGeneratingSegmentIds(prev => [...prev, segmentId]);
       const startedAt = performance.now();
       try {
-        const suggestion = await suggestOpinions({ meetingId, segmentId, source, name, role });
+        const suggestion = await suggestOpinions({
+          meetingId,
+          segmentId,
+          source,
+          name,
+          role,
+          language,
+        });
         setSuggestions(prev => [suggestion, ...prev.filter(s => s.id !== suggestion.id)]);
         const segmentCreatedAt = segmentCreatedAtRef.current.get(segmentId);
         // 자동 추천은 "발화 저장 → 추천 저장" 전체를, 직접 요청은 클릭부터의 왕복을 잰다.
@@ -77,7 +84,7 @@ export default function useMeetingRoom(profile: Profile) {
         setGeneratingSegmentIds(prev => prev.filter(id => id !== segmentId));
       }
     },
-    [meetingId, name, role, addLatency]
+    [meetingId, name, role, language, addLatency]
   );
 
   const handleContext = useCallback(
@@ -131,10 +138,16 @@ export default function useMeetingRoom(profile: Profile) {
   }, [runRefresh]);
 
   const addUtterance = useCallback(
-    async (text: string, finalizedAt?: number) => {
+    // speaker 는 화자 분리 결과(예: "화자 1"). 직접 입력이나 화자를 모를 때는 입력한 사람 이름을 쓴다.
+    async (text: string, finalizedAt?: number, speaker?: string, spokenLanguage?: string) => {
       const startedAt = finalizedAt ?? performance.now();
       try {
-        const segment = await appendSegment(meetingId, name, text);
+        const segment = await appendSegment(
+          meetingId,
+          speaker || name,
+          text,
+          spokenLanguage ?? null
+        );
         mergeSegment(segment);
         addLatency({
           stage: 'stt',

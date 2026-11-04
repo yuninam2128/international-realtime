@@ -4,6 +4,8 @@ import type { Segment } from '../types';
 
 type TranscriptPanelProps = {
   segments: Segment[];
+  // 내 언어로 옮긴 발화. 원문과 같으면(이미 내 언어) 보여주지 않는다.
+  translations: Map<number, string>;
   interim: string;
   targetSegmentIds: Set<number>;
   generatingSegmentIds: number[];
@@ -19,6 +21,7 @@ const timeFormat = new Intl.DateTimeFormat('ko-KR', {
 
 export default function TranscriptPanel({
   segments,
+  translations,
   interim,
   targetSegmentIds,
   generatingSegmentIds,
@@ -34,7 +37,7 @@ export default function TranscriptPanel({
     if (!list) return;
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
     if (nearBottom) list.scrollTop = list.scrollHeight;
-  }, [segments.length, interim]);
+  }, [segments.length, translations.size, interim]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -60,6 +63,7 @@ export default function TranscriptPanel({
         {segments.map(segment => {
           const isTarget = targetSegmentIds.has(segment.id);
           const isGenerating = generatingSegmentIds.includes(segment.id);
+          const translation = translations.get(segment.id);
           return (
             <div
               key={segment.id}
@@ -74,6 +78,9 @@ export default function TranscriptPanel({
                   {timeFormat.format(new Date(segment.created_at))}
                 </span>
                 <p className="body-03 break-keep text-gray-800">{segment.content}</p>
+                {translation && translation.trim() !== segment.content.trim() && (
+                  <p className="body-04 break-keep text-primary-700">{translation}</p>
+                )}
               </div>
               <button
                 type="button"

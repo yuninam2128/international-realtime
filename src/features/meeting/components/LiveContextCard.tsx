@@ -1,13 +1,16 @@
 import Chip from '../../../shared/components/Chip';
 import { RefreshIcon } from '../../../shared/components/icons';
+import type { ContextTranslation } from '../hooks/useTranslations';
 import type { LiveContext } from '../types';
 
 type LiveContextCardProps = {
   context: LiveContext | null;
+  // 내 언어가 한국어가 아닐 때 주제·요약 번역
+  translation: ContextTranslation | null;
   onRefresh: () => void;
 };
 
-export default function LiveContextCard({ context, onRefresh }: LiveContextCardProps) {
+export default function LiveContextCard({ context, translation, onRefresh }: LiveContextCardProps) {
   const updating = Boolean(context?.locked_until);
   const decision = context?.suggest_decision;
 
@@ -41,6 +44,7 @@ export default function LiveContextCard({ context, onRefresh }: LiveContextCardP
           <div className="flex flex-col gap-1">
             <span className="label-01 text-gray-500">현재 주제</span>
             <p className="title-02 text-gray-900">{context.current_topic ?? '주제 파악 중'}</p>
+            {translation?.topic && <p className="body-03 text-primary-700">{translation.topic}</p>}
           </div>
 
           {context.keywords.length > 0 && (
@@ -56,6 +60,9 @@ export default function LiveContextCard({ context, onRefresh }: LiveContextCardP
           )}
 
           <p className="body-03 text-gray-700">{context.rolling_summary}</p>
+          {translation?.summary && (
+            <p className="-mt-2 body-03 text-primary-700">{translation.summary}</p>
+          )}
 
           {context.open_questions.length > 0 && (
             <div className="flex flex-col gap-1.5 rounded-3 bg-gray-20 p-3">

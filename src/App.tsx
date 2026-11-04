@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DEFAULT_LANGUAGE } from './shared/lib/languages';
 import { isSupabaseConfigured } from './shared/lib/supabase';
 import JoinForm from './features/meeting/components/JoinForm';
 import MeetingRoomPage from './features/meeting/pages/MeetingRoomPage';
@@ -9,11 +10,21 @@ const PROFILE_KEY = 'nuncheet-profile';
 function loadProfile(): Profile {
   try {
     const saved = localStorage.getItem(PROFILE_KEY);
-    if (saved) return JSON.parse(saved) as Profile;
+    // 언어 선택이 생기기 전에 저장된 프로필에는 language 가 없다.
+    if (saved)
+      return { language: DEFAULT_LANGUAGE, ...(JSON.parse(saved) as Partial<Profile>) } as Profile;
   } catch {
     // 저장소를 못 쓰는 환경이면 빈 값으로 시작한다.
   }
-  return { meetingId: 'lab-1', name: '', role: '' };
+  return { meetingId: 'lab-1', name: '', role: '', language: DEFAULT_LANGUAGE };
+}
+
+function saveProfile(profile: Profile) {
+  try {
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // 다음 방문 때 다시 입력하면 된다.
+  }
 }
 
 export default function App() {
@@ -37,11 +48,7 @@ export default function App() {
       <JoinForm
         initial={loadProfile()}
         onJoin={next => {
-          try {
-            localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-          } catch {
-            // 다음 방문 때 다시 입력하면 된다.
-          }
+          saveProfile(next);
           setProfile(next);
         }}
       />
@@ -49,6 +56,15 @@ export default function App() {
   }
 
   return (
-    <MeetingRoomPage key={profile.meetingId} profile={profile} onLeave={() => setProfile(null)} />
+    <MeetingRoomPage
+      key={profile.meetingId}
+      profile={profile}
+      onLeave={() => setProfile(null)}
+      onChangeLanguage={language => {
+        const next = { ...profile, language };
+        saveProfile(next);
+        setProfile(next);
+      }}
+    />
   );
 }

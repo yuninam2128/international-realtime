@@ -2,11 +2,13 @@
 import { createStructuredGemini } from './gemini.ts';
 import { createStructured as createStructuredOpenAi, env } from './openai.ts';
 
-type Task = 'LIVE_CONTEXT' | 'OPINION';
+type Task = 'LIVE_CONTEXT' | 'OPINION' | 'TRANSLATE';
 
+// 2026-11 측정: gemini-3.1-flash-lite 가 1~2초로 가장 빨랐다(3.5-flash 는 15~34초, 3.5-flash-lite 는 5~6초).
 const DEFAULTS: Record<Task, { openai: string; gemini: string }> = {
-  LIVE_CONTEXT: { openai: 'gpt-5.6-luna', gemini: 'gemini-3.5-flash-lite' },
-  OPINION: { openai: 'gpt-5.6-terra', gemini: 'gemini-3.5-flash' },
+  LIVE_CONTEXT: { openai: 'gpt-5.6-luna', gemini: 'gemini-3.1-flash-lite' },
+  OPINION: { openai: 'gpt-5.6-terra', gemini: 'gemini-3.1-flash-lite' },
+  TRANSLATE: { openai: 'gpt-5.6-luna', gemini: 'gemini-3.1-flash-lite' },
 };
 
 export function createStructured<T>(
@@ -19,7 +21,7 @@ export function createStructured<T>(
   if (env('AI_PROVIDER', 'openai') === 'gemini') {
     return createStructuredGemini<T>(input, schema, {
       model: env(`GEMINI_${task}_MODEL`, DEFAULTS[task].gemini),
-      thinking: env(`GEMINI_${task}_THINKING`, 'low'),
+      thinking: env(`GEMINI_${task}_THINKING`, 'minimal'),
       maxOutputTokens,
     });
   }

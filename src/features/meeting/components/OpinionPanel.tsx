@@ -96,6 +96,9 @@ function SuggestionCard({ suggestion, segment, compact = false }: SuggestionCard
           <span className={compact ? 'body-04 text-gray-700' : 'body-02 break-keep text-gray-800'}>
             {suggestion[key]}
           </span>
+          {suggestion.gloss && (
+            <span className="body-04 break-keep text-primary-700">{suggestion.gloss[key]}</span>
+          )}
         </button>
       ))}
     </div>
